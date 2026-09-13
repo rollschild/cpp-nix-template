@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+# Add a find_dependency(<Pkg>) line for every PUBLIC dependency of
+# myproject::myproject so consumers get them transitively.
+
+include("${CMAKE_CURRENT_LIST_DIR}/myproject-targets.cmake")
+
+check_required_components(myproject)

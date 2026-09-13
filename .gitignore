@@ -1,0 +1,14 @@
+# CMake (all presets configure under build/<preset>)
+build/
+CMakeUserPresets.json
+compile_commands.json
+
+# Nix
+result
+result-*
+.direnv/
+.devshell*
+
+# Editor / tool caches
+.cache/
+.ccls-cache/

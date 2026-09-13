@@ -1,0 +1,22 @@
+---
+# Run via the `tidy` preset: cmake --workflow --preset tidy
+Checks: >
+  -*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -misc-no-recursion,
+  -portability-avoid-pragma-once,
+  -modernize-use-trailing-return-type,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -misc-non-private-member-variables-in-classes,
+  -cppcoreguidelines-non-private-member-variables-in-classes
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*/(include|src|apps|tests)/.*'
+FormatStyle: file
