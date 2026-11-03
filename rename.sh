@@ -1,28 +1,39 @@
 #!/usr/bin/env bash
-# Rename the template project. Usage: ./rename.sh <new_project_name>
-# The name must be a valid C++ identifier in lower_snake_case.
+# One-shot setup of a project created from this template: replaces "myproject"
+# everywhere (C++ namespace, CMake targets, file names, Nix package), deletes
+# itself, reformats, and stages the result in git (flakes only see tracked
+# files).
+#
+# Usage: bash rename.sh [name]    # name defaults to the directory name
 set -euo pipefail
-
-new="${1:?usage: ./rename.sh <new_project_name>}"
-if [[ ! "$new" =~ ^[a-z][a-z0-9_]*$ ]]; then
-    echo "error: name must match ^[a-z][a-z0-9_]*$ (got '$new')" >&2
-    exit 1
-fi
-NEW="$(printf '%s' "$new" | tr '[:lower:]' '[:upper:]')"
-
 cd "$(dirname "$0")"
 
-mv_() { if git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git ls-files --error-unmatch "$1" >/dev/null 2>&1; then git mv "$1" "$2"; else mv "$1" "$2"; fi; }
+new="${1:-$(basename "$PWD")}"
+if [[ ! "$new" =~ ^[a-z][a-z0-9_]*$ ]]; then
+    echo "error: '$new' is not lower_snake_case (it becomes a C++ namespace)" >&2
+    echo "usage: bash rename.sh [name]" >&2
+    exit 1
+fi
+upper="$(printf '%s' "$new" | tr '[:lower:]' '[:upper:]')"
 
-mv_ include/myproject "include/$new"
-mv_ src/myproject.cpp "src/$new.cpp"
-mv_ "include/$new/myproject.hpp" "include/$new/$new.hpp"
-mv_ tests/myproject_test.cpp "tests/${new}_test.cpp"
-mv_ cmake/myproject-config.cmake.in "cmake/$new-config.cmake.in"
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || git init --quiet
+git add --all
 
-# Replace identifiers in every tracked/regular file except this script.
-find . -type f -not -path './.git/*' -not -path './build/*' -not -path './.direnv/*' -not -name rename.sh -print0 |
-    xargs -0 perl -pi -e "s/MYPROJECT/$NEW/g; s/myproject/$new/g"
+# File contents: every tracked file except this script.
+git ls-files -z -- . ':!rename.sh' |
+    xargs -0 perl -pi -e "s/myproject/$new/g; s/MYPROJECT/$upper/g"
+
+# File and directory names, deepest first so parents are renamed last.
+find . -depth -name '*myproject*' \
+    -not -path './.git/*' -not -path './build/*' -not -path './.direnv/*' |
+    while IFS= read -r path; do
+        mv "$path" "$(dirname "$path")/$(basename "$path" | sed "s/myproject/$new/g")"
+    done
 
 rm -- "$0"
-echo "Renamed to '$new'. Now: git add -A && direnv allow && cmake --workflow --preset dev"
+git add --all
+# A name of different length can change line wrapping.
+nix fmt
+git add --all
+echo "Renamed to '$new'. Next: direnv allow (or nix develop), then cmake --workflow --preset dev."
+echo "WORKFLOW.md has every command, in the order you use them."

@@ -5,7 +5,7 @@
     # Pin a channel that cache.nixos.org actually builds; `master` is not cached.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # One `nix fmt` entry point for C++, CMake and Nix sources.
+    # One `nix fmt` entry point for C++, CMake, Python and Nix sources.
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -21,10 +21,10 @@
     let
       inherit (nixpkgs) lib;
 
+      # nixpkgs dropped x86_64-darwin in 26.11.
       systems = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
         "aarch64-darwin"
       ];
 
@@ -56,14 +56,17 @@
         };
       });
 
-      # `nix flake check`: build + run the test suite, then verify formatting.
+      # `nix flake check`: build and test with the default compiler and with
+      # Clang, then verify formatting and lint.
       checks = forAllSystems (
         pkgs:
         let
-          system = pkgs.stdenv.hostPlatform.system;
+          inherit (pkgs.stdenv.hostPlatform) system;
+          inherit (self.packages.${system}) myproject;
         in
         {
-          package = self.packages.${system}.myproject;
+          package = myproject;
+          clang = myproject.override { stdenv = pkgs.clangStdenv; };
           formatting = treefmtFor.${system}.config.build.check self;
         }
       );
@@ -73,22 +76,22 @@
         pkgs: treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper
       );
 
-      # `nix flake init -t <this repo>` scaffolds a new project from this tree.
+      # `nix flake new -t <this repo> <dir>` scaffolds a new project from this tree.
       templates.default = {
         path = ./.;
-        description = "C++23 + CMake presets + Nix flake (direnv, Catch2, treefmt)";
+        description = "C++23 + CMake presets + Nix flake (direnv, Catch2, treefmt, Python scripts)";
         welcomeText = ''
-          # myproject template
+          # New C++ project
 
-          `nix flake init` does not preserve file modes, so invoke the rename
-          script through bash:
+          From the new project's directory:
 
           ```
-          bash rename.sh <new_project_name>
-          git init && git add -A          # flakes only see tracked files
+          bash rename.sh                  # name = directory name; also git init + add
           direnv allow                    # or: nix develop
           cmake --workflow --preset dev   # configure + build + test
           ```
+
+          WORKFLOW.md has every command, in the order you use them.
         '';
       };
     };

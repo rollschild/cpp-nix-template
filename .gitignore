@@ -1,4 +1,4 @@
-# CMake (all presets configure under build/<preset>)
+# CMake (every preset configures into build/<preset>)
 build/
 CMakeUserPresets.json
 compile_commands.json
@@ -7,8 +7,11 @@ compile_commands.json
 result
 result-*
 .direnv/
-.devshell*
+
+# Python
+__pycache__/
+.venv/
+.ruff_cache/
 
 # Editor / tool caches
 .cache/
-.ccls-cache/

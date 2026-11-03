@@ -1,6 +1,5 @@
 {
   "version": 8,
-  "cmakeMinimumRequired": { "major": 3, "minor": 28, "patch": 0 },
   "configurePresets": [
     {
       "name": "base",
@@ -18,14 +17,16 @@
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "MYPROJECT_WARNINGS_AS_ERRORS": "ON"
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
       }
     },
     {
       "name": "asan",
-      "displayName": "Debug + AddressSanitizer + UBSan",
+      "displayName": "Debug + AddressSanitizer + UndefinedBehaviorSanitizer",
       "inherits": "dev",
-      "cacheVariables": { "MYPROJECT_ENABLE_SANITIZERS": "ON" }
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      }
     },
     {
       "name": "tidy",

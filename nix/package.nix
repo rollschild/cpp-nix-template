@@ -1,5 +1,5 @@
-# The package expression, written nixpkgs-style so it can be `callPackage`d
-# from the flake, from an overlay, or copied into nixpkgs later.
+# The package, written nixpkgs-style so it can be `callPackage`d from the flake,
+# from an overlay, or copied into nixpkgs later.
 {
   lib,
   stdenv,
@@ -10,10 +10,15 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "myproject";
-  version = "0.1.0";
+  # Read from `project(... VERSION x.y.z ...)` in CMakeLists.txt, so a version
+  # bump is a one-line change there.
+  version = lib.head (
+    builtins.match ".*project\\([^)]*VERSION[[:space:]]+([^[:space:])]+).*" (
+      builtins.readFile ../CMakeLists.txt
+    )
+  );
 
-  # Only what CMake needs. Editing README.md, flake.nix or the presets does not
-  # invalidate the build.
+  # Only what CMake needs: editing docs, scripts or Nix files never rebuilds.
   src = lib.fileset.toSource {
     root = ../.;
     fileset = lib.fileset.unions [
@@ -38,11 +43,11 @@ stdenv.mkDerivation (finalAttrs: {
   checkInputs = [ catch2_3 ];
 
   cmakeFlags = [
-    (lib.cmakeBool "MYPROJECT_WARNINGS_AS_ERRORS" true)
+    (lib.cmakeBool "CMAKE_COMPILE_WARNING_AS_ERROR" true)
   ];
 
-  # The cmake hook also passes -DBUILD_TESTING=OFF when this is false, and the
-  # ninja hook runs the `test` target (ctest) when it is true.
+  # Run the tests (ctest) after building. When false, the cmake hook passes
+  # -DBUILD_TESTING=OFF, so Catch2 is not needed at all.
   doCheck = true;
 
   # Keep build-time and run-time dependencies separate (catches misplaced inputs).
