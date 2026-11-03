@@ -42,7 +42,9 @@ cmake --workflow --preset dev   # configure + build + test: confirms everything 
 
 - `my_tool` stands for the new project's name. It must be lower_snake_case
   because it becomes the C++ namespace. `rename.sh` takes it from the
-  directory name, or pass it explicitly: `bash rename.sh my_tool`.
+  directory name, or pass it explicitly: `bash rename.sh my_tool`. If neither
+  is valid (e.g. the directory is `my-tool`), it asks for a name, suggesting a
+  converted one (`my_tool`) that Enter accepts.
 - `rename.sh` replaces the template's placeholder name everywhere (namespace,
   CMake targets, file names, Nix package), runs `git init` if needed, reformats
   (a name of different length can change line wrapping) and stages everything,
