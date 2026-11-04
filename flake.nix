@@ -1,5 +1,5 @@
 {
-  description = "myproject: a C++23 project built with CMake and packaged with Nix";
+  description = "C++23 project template with CMake presets and a Nix flake";
 
   inputs = {
     # Pin a channel that cache.nixos.org actually builds; `master` is not cached.
@@ -75,6 +75,7 @@
       formatter = forAllSystems (
         pkgs: treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper
       );
+      # template-only:begin (rename.sh deletes this block in new projects)
 
       # `nix flake new -t <this repo> <dir>` scaffolds a new project from this tree.
       templates.default = {
@@ -86,7 +87,7 @@
           From the new project's directory:
 
           ```
-          bash rename.sh                  # name = directory name; also git init + add
+          bash rename.sh                  # asks for a description (and a name if the directory's isn't valid)
           direnv allow                    # or: nix develop
           cmake --workflow --preset dev   # configure + build + test
           ```
@@ -94,5 +95,6 @@
           WORKFLOW.md has every command, in the order you use them.
         '';
       };
+      # template-only:end
     };
 }

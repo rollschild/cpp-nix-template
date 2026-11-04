@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.28...4.4)
 project(
     myproject
     VERSION 0.1.0
-    DESCRIPTION "A C++23 project template"
+    DESCRIPTION "C++23 project template with CMake presets and a Nix flake"
     HOMEPAGE_URL "https://github.com/rollschild/myproject"
     LANGUAGES CXX
 )

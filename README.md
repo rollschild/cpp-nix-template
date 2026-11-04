@@ -1,9 +1,18 @@
 # myproject
 
-A C++23 project template: a library, a command-line executable and Catch2
-tests, built with CMake presets, packaged and developed with a Nix flake, with
-room for Python helper scripts. `nix flake check` runs the same build, tests,
-formatting and lint checks that CI runs.
+C++23 project template with CMake presets and a Nix flake.
+
+<!-- template-only:begin -->
+**This repository is a template.** Start a project from it with
+`nix flake new -t github:rollschild/cpp-nix-template <name>`, then run
+`bash rename.sh` in the new directory: it asks for a description and fills in
+every placeholder. [WORKFLOW.md](WORKFLOW.md) §1 has the details.
+
+<!-- template-only:end -->
+A C++23 library, a command-line executable and Catch2 tests, built with CMake
+presets and developed and packaged with a Nix flake, with room for Python
+helper scripts. `nix flake check` runs the same build, tests, formatting and
+lint checks that CI runs.
 
 ## Quick start
 
@@ -39,8 +48,7 @@ committing, dependencies and updates.
 ├── .envrc                    # direnv: `use flake`
 ├── .clangd                   # clangd reads build/dev/compile_commands.json
 ├── .clang-format  .clang-tidy  .editorconfig
-├── .github/                  # CI (`nix flake check` + ASan run), Dependabot
-└── rename.sh                 # one-shot project setup, deletes itself
+└── .github/                  # CI (`nix flake check` + ASan run), Dependabot
 ```
 
 The layout follows the Pitchfork Layout with separate header placement

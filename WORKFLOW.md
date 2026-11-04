@@ -35,7 +35,7 @@ the daily loop, checks before committing, and occasional tasks.
 cd ~/projects
 nix flake new -t ~/projects/cpp-nix-template my_tool   # or: -t github:rollschild/cpp-nix-template
 cd my_tool
-bash rename.sh                  # renames the template, git init + add, nix fmt, deletes itself
+bash rename.sh                  # asks for a description, fills in every placeholder, git init + add, nix fmt
 direnv allow                    # builds and loads the dev shell (slow once, then cached)
 cmake --workflow --preset dev   # configure + build + test: confirms everything works
 ```
@@ -45,18 +45,27 @@ cmake --workflow --preset dev   # configure + build + test: confirms everything 
   directory name, or pass it explicitly: `bash rename.sh my_tool`. If neither
   is valid (e.g. the directory is `my-tool`), it asks for a name, suggesting a
   converted one (`my_tool`) that Enter accepts.
-- `rename.sh` replaces the template's placeholder name everywhere (namespace,
-  CMake targets, file names, Nix package), runs `git init` if needed, reformats
-  (a name of different length can change line wrapping) and stages everything,
-  because flakes only see files tracked by git. Run it through `bash`:
-  `nix flake new` drops the executable bit.
+- `rename.sh` then asks for a one-line description (no `"`, `\` or `$`), shows
+  a summary, and on Enter fills in every placeholder: the name (namespace,
+  CMake targets, file names, Nix package), the description (`CMakeLists.txt`,
+  `nix/package.nix`, `flake.nix`, `README.md`), and the LICENSE year and
+  holder (your git `user.name`). It removes the parts that only make sense in
+  the template (the flake's `templates` output, the template note in the
+  README), starts git on `main` (the branch CI runs on), reformats (a name of
+  different length can change line wrapping), stages everything (flakes only
+  see files tracked by git), warns if any placeholder is left, and deletes
+  itself.
+- Without prompts (e.g. from a script): `bash rename.sh my_tool "One-line description"`.
+- Run it through `bash`: `nix flake new` drops the executable bit.
 - Alternative to `nix flake new`:
   `git clone ~/projects/cpp-nix-template my_tool && rm -rf my_tool/.git`.
   `git clone` copies only committed files (`nix flake new` also copies
   uncommitted edits to tracked files), so commit template changes first.
 
-Personalise `LICENSE`, `DESCRIPTION` and `HOMEPAGE_URL` in `CMakeLists.txt`,
-`meta` in `nix/package.nix`, and `README.md`. Then:
+What `rename.sh` cannot fill in: the template's example code (a `greet`
+function in `include/my_tool/my_tool.hpp`, `src/my_tool.cpp`, `apps/main.cpp`
+and `tests/my_tool_test.cpp`; it keeps the build and tests green until you
+replace it) and the body of `README.md`. Then:
 
 ```bash
 nix flake check                 # optional: everything CI will check

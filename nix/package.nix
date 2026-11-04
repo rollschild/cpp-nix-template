@@ -54,7 +54,7 @@ stdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   meta = {
-    description = "A C++23 project template";
+    description = "C++23 project template with CMake presets and a Nix flake";
     homepage = "https://github.com/rollschild/${finalAttrs.pname}";
     license = lib.licenses.mit;
     platforms = lib.platforms.unix;
