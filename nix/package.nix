@@ -8,15 +8,13 @@
   catch2_3,
 }:
 
+let
+  # Name, version and description come from project(...) in CMakeLists.txt.
+  project = import ./project.nix;
+in
 stdenv.mkDerivation (finalAttrs: {
-  pname = "myproject";
-  # Read from `project(... VERSION x.y.z ...)` in CMakeLists.txt, so a version
-  # bump is a one-line change there.
-  version = lib.head (
-    builtins.match ".*project\\([^)]*VERSION[[:space:]]+([^[:space:])]+).*" (
-      builtins.readFile ../CMakeLists.txt
-    )
-  );
+  pname = project.name;
+  inherit (project) version;
 
   # Only what CMake needs: editing docs, scripts or Nix files never rebuilds.
   src = lib.fileset.toSource {
@@ -54,10 +52,10 @@ stdenv.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   meta = {
-    description = "C++23 project template with CMake presets and a Nix flake";
+    inherit (project) description;
     homepage = "https://github.com/rollschild/${finalAttrs.pname}";
     license = lib.licenses.mit;
     platforms = lib.platforms.unix;
-    mainProgram = "myproject";
+    mainProgram = finalAttrs.pname; # apps/ builds the executable under the project name
   };
 })

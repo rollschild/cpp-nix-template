@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.28...4.4)
 
-# VERSION is the single source of truth: nix/package.nix reads it from here.
+# The name, VERSION and DESCRIPTION are the single source of truth:
+# nix/project.nix reads them from here for the Nix package and flake.
 project(
     myproject
     VERSION 0.1.0

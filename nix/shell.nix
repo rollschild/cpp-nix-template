@@ -5,7 +5,7 @@
   stdenv,
   buildEnv,
   mkShell,
-  myproject,
+  package,
   clang-tools,
   gdb,
   gersemi,
@@ -15,9 +15,9 @@
 }:
 
 mkShell {
-  name = "myproject-dev";
+  name = "${package.pname}-dev";
 
-  inputsFrom = [ myproject ];
+  inputsFrom = [ package ];
 
   packages = [
     clang-tools # clangd, clang-tidy, clang-format

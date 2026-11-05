@@ -2,7 +2,8 @@
 
 Every command for this project, in the order you use them: one-time machine
 setup, starting a new project from the template, opening an existing project,
-the daily loop, checks before committing, and occasional tasks.
+the daily loop, checks before committing, dependencies, occasional tasks, and
+troubleshooting.
 
 ## 0. One-time machine setup
 
@@ -33,36 +34,40 @@ the daily loop, checks before committing, and occasional tasks.
 
 ```bash
 cd ~/projects
-nix flake new -t ~/projects/cpp-nix-template my_tool   # or: -t github:rollschild/cpp-nix-template
+nix run github:rollschild/cpp-nix-template#new -- my_tool   # or the local copy: nix run ~/projects/cpp-nix-template#new -- my_tool
 cd my_tool
-bash rename.sh                  # asks for a description, fills in every placeholder, git init + add, nix fmt
-direnv allow                    # builds and loads the dev shell (slow once, then cached)
-cmake --workflow --preset dev   # configure + build + test: confirms everything works
+direnv allow                    # loads the dev shell (the generator already built it, so this is quick)
+cmake --workflow --preset dev   # build + test: confirms everything works
 ```
 
-- `my_tool` stands for the new project's name. It must be lower_snake_case
-  because it becomes the C++ namespace. `rename.sh` takes it from the
-  directory name, or pass it explicitly: `bash rename.sh my_tool`. If neither
-  is valid (e.g. the directory is `my-tool`), it asks for a name, suggesting a
-  converted one (`my_tool`) that Enter accepts.
-- `rename.sh` then asks for a one-line description (no `"`, `\` or `$`), shows
-  a summary, and on Enter fills in every placeholder: the name (namespace,
-  CMake targets, file names, Nix package), the description (`CMakeLists.txt`,
-  `nix/package.nix`, `flake.nix`, `README.md`), and the LICENSE year and
-  holder (your git `user.name`). It removes the parts that only make sense in
-  the template (the flake's `templates` output, the template note in the
-  README), starts git on `main` (the branch CI runs on), reformats (a name of
-  different length can change line wrapping), stages everything (flakes only
-  see files tracked by git), warns if any placeholder is left, and deletes
-  itself.
-- Without prompts (e.g. from a script): `bash rename.sh my_tool "One-line description"`.
-- Run it through `bash`: `nix flake new` drops the executable bit.
-- Alternative to `nix flake new`:
-  `git clone ~/projects/cpp-nix-template my_tool && rm -rf my_tool/.git`.
-  `git clone` copies only committed files (`nix flake new` also copies
-  uncommitted edits to tracked files), so commit template changes first.
+- The generator creates `./my_tool`. The name must be lower_snake_case
+  because it becomes the C++ namespace; anything else is converted into a
+  suggestion that Enter accepts. It asks for a one-line description (no `"`,
+  `\` or `$`), shows a summary, and on Enter:
+  - fills in the name (namespace, CMake targets, file names) and the
+    description (`CMakeLists.txt`, `flake.nix`, `README.md`). The Nix files
+    read the name, version and description from `project(...)` in
+    `CMakeLists.txt` (`nix/project.nix`), so they need no placeholders and
+    stay identical to the template's;
+  - sets the LICENSE year and holder (your git `user.name`);
+  - leaves out the template-only parts: the generator itself
+    (`nix/new-project/`) and the flake outputs that run and test it;
+  - starts git on `main` (the branch CI runs on), stages everything (flakes
+    only see files tracked by git) and runs `nix fmt`;
+  - configures the `dev` preset, so clangd has
+    `build/dev/compile_commands.json` before you open the editor (see
+    Troubleshooting);
+  - warns if any placeholder is left.
+- Without prompts (e.g. from a script):
+  `nix run github:rollschild/cpp-nix-template#new -- my_tool "One-line description"`.
+- `github:` runs the template as pushed (Nix caches it for up to an hour; add
+  `--refresh` right after pushing a template change). The local path runs your
+  working tree, including uncommitted edits to tracked files.
+- The template's `nix flake check` (and so its CI) runs the generator in the
+  sandbox and checks that the result has no placeholders, formats cleanly,
+  builds and passes its tests.
 
-What `rename.sh` cannot fill in: the template's example code (a `greet`
+What the generator cannot fill in: the template's example code (a `greet`
 function in `include/my_tool/my_tool.hpp`, `src/my_tool.cpp`, `apps/main.cpp`
 and `tests/my_tool_test.cpp`; it keeps the build and tests green until you
 replace it) and the body of `README.md`. Then:
@@ -89,13 +94,13 @@ Fresh clone (another machine, or from GitHub):
 git clone git@github.com:rollschild/myproject.git
 cd myproject
 direnv allow                    # once per clone
-cmake --workflow --preset dev
+cmake --workflow --preset dev   # before opening the editor: also writes the compile database clangd reads
 ```
 
 ## 3. Daily loop
 
 ```bash
-nvim .                          # launch from the project dir so clangd and formatters come from the dev shell
+nvim .                          # from the project dir (after the first configure): clangd and formatters come from the dev shell
 cmake --build --preset dev      # build
 ctest --preset dev              # test (or both at once: cmake --workflow --preset dev)
 ctest --preset dev -R <regex>   # only the tests whose names match
@@ -124,27 +129,115 @@ git commit -m "..."
 git push                        # CI also runs the asan workflow in the dev shell
 ```
 
-## 5. Occasional tasks
+## 5. Dependencies
 
-### Add a C++ dependency
+Where each kind of dependency goes:
 
-1. Add the nixpkgs attribute to `buildInputs` in `nix/package.nix`
-   (`checkInputs` if only the tests need it). direnv reloads the shell.
-2. `find_package(Foo REQUIRED)` and
-   `target_link_libraries(myproject_lib PUBLIC Foo::Foo)` in
-   `src/CMakeLists.txt`. Use `PRIVATE` if `Foo` does not appear in your public
-   headers.
-3. For every `PUBLIC` dependency, add `find_dependency(Foo)` to
-   `cmake/myproject-config.cmake.in`, so consumers of the installed package
-   get it transitively.
-4. `cmake --workflow --preset dev`
+| You need | Put it in | Examples |
+| --- | --- | --- |
+| A library your code links against | `buildInputs` in `nix/package.nix` | `abseil-cpp`, `boost`, `liburing` |
+| A library only the tests use | `checkInputs` in `nix/package.nix` | `catch2_3` (already there) |
+| A tool that runs during the build | `nativeBuildInputs` in `nix/package.nix` | `protobuf` (for `protoc`) |
+| A tool you only use at the keyboard | `packages` in `nix/shell.nix` | `hyperfine`, `valgrind`, `lldb` |
+| A Python library for `scripts/` | `python3.withPackages` in `nix/shell.nix` | `ps.numpy`, `ps.matplotlib` |
+
+Each Nix file is a function: the name goes in **two** places, the argument
+list at the top (`{ lib, stdenv, ..., abseil-cpp }:`) and the list itself.
+Save, and direnv reloads the shell.
+
+### Find the package and its CMake names
+
+```bash
+nix search --inputs-from . nixpkgs '^abseil'      # attribute name, in the project's pinned nixpkgs
+find $(nix build --no-link --print-out-paths --inputs-from . 'nixpkgs#abseil-cpp^*') \
+    -name '*[Cc]onfig.cmake'                       # .../lib/cmake/absl/abslConfig.cmake -> find_package(absl)
+grep -ho 'add_library([^ ]*' $(find $(nix build --no-link --print-out-paths --inputs-from . \
+    'nixpkgs#abseil-cpp^*') -name '*[Tt]argets.cmake') | sort -u   # targets: absl::flat_hash_map, ...
+```
+
+### Add a C++ library (example: abseil)
+
+1. `nix/package.nix`: add `abseil-cpp` to the arguments and to
+   `buildInputs = [ abseil-cpp ];`.
+2. `src/CMakeLists.txt`: `find_package(absl REQUIRED)` and
+   `target_link_libraries(myproject_lib PRIVATE absl::flat_hash_map)`.
+   Use `PUBLIC` instead if its types appear in your headers under
+   `include/myproject/`, and then also add `find_dependency(absl)` to
+   `cmake/myproject-config.cmake.in`, so consumers of the installed package get
+   it too.
+3. Build and test: `cmake --workflow --preset dev`, then `nix build` or
+   `nix flake check`. The Nix build runs in a sandbox, so it catches anything
+   that only happens to be available in your shell.
+
+A library only the tests use goes in `checkInputs` instead, with its
+`find_package` and `target_link_libraries(myproject_tests PRIVATE ...)` in
+`tests/CMakeLists.txt`: that file is skipped when tests are off.
+
+### Remove a dependency
+
+1. Delete it from the list and from the arguments in `nix/package.nix` (or
+   `nix/shell.nix`).
+2. Delete its `find_package`, `target_link_libraries` entry,
+   `find_dependency` line (if any) and `#include`s.
+3. `cmake --workflow --preset dev --fresh` (`--fresh` drops the cached
+   `find_package` results), then `nix flake check`.
+
+### Versions
+
+The pinned nixpkgs (`flake.lock`) decides every version, and
+`nix flake update` moves them all together. When you need a different version
+of one library, nixpkgs often carries it as its own attribute (`boost187` next
+to `boost`); `nix search` lists them.
+
+### A library that is not in nixpkgs
+
+Package it in a small file under `nix/`, for example
+`nix/unordered-dense.nix`:
+
+```nix
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  cmake,
+  ninja,
+}:
+
+stdenv.mkDerivation (finalAttrs: {
+  pname = "unordered-dense";
+  version = "4.5.0";
+  src = fetchFromGitHub {
+    owner = "martinus";
+    repo = "unordered_dense";
+    tag = "v${finalAttrs.version}";
+    hash = lib.fakeHash; # replace with the hash Nix prints on the first build
+  };
+  nativeBuildInputs = [
+    cmake
+    ninja
+  ];
+})
+```
+
+1. `git add nix/unordered-dense.nix`: flakes only see tracked files
+   (otherwise: "... is not tracked by Git").
+2. In `nix/package.nix`, add `callPackage` to the arguments and
+   `(callPackage ./unordered-dense.nix { })` to `buildInputs`.
+3. `nix build` fails once with `got: sha256-...`; paste that as the `hash`.
+4. Use it from CMake like any other package
+   (`find_package(unordered_dense REQUIRED)`,
+   `unordered_dense::unordered_dense`).
+
+Don't use CMake's `FetchContent` for dependencies: the Nix build sandbox has
+no network, so `nix build` and CI would fail.
+
+## 6. Occasional tasks
 
 ### Python scripts
 
 - Put helper scripts (data generation, analysis, plotting) in `scripts/` and
-  run them in the dev shell: `python3 scripts/foo.py`.
-- Libraries come from nixpkgs: add them to `python3.withPackages` in
-  `nix/shell.nix`, e.g. `(ps: [ ps.numpy ps.matplotlib ])`.
+  run them in the dev shell: `python3 scripts/foo.py`. Their libraries are in
+  §5.
 - `nix fmt` runs ruff (lint with autofix, then format) and `nix flake check`
   fails on what it cannot fix. The rules are in `ruff.toml`.
 - Scripts run by the build (code generators): put
@@ -167,3 +260,14 @@ git push                        # CI also runs the asan workflow in the dev shel
 | Bump the version | edit `project(... VERSION x.y.z)` in `CMakeLists.txt`; Nix reads it from there |
 | Clean rebuild | `rm -rf build/dev && cmake --workflow --preset dev` |
 | Personal CMake overrides (ccache, another generator or compiler) | `CMakeUserPresets.json`, git-ignored, can inherit these presets |
+
+## 7. Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| clangd: `'myproject/myproject.hpp' file not found`, `no member named 'format' in namespace 'std'` | No compile database yet: clangd reads `build/dev/compile_commands.json` (see `.clangd`) and otherwise guesses the flags (no include path, C++17). A clangd started before the database appeared keeps the guess. | `cmake --preset dev`, then restart clangd: `:lsp restart clangd` in Neovim, `editor: restart language server` in Zed |
+| `error: Path 'nix/foo.nix' ... is not tracked by Git` | Flakes only see files tracked by git | `git add nix/foo.nix` |
+| `hash mismatch ... got: sha256-...` | A new or changed `fetchFromGitHub` | Paste the `got:` hash into `hash` |
+| CMake complains the compiler changed, or still finds a removed package | Cached paths from before `nix flake update` or a dependency change | `cmake --workflow --preset dev --fresh` |
+| `direnv: error .envrc is blocked` | `.envrc` changed (or a fresh clone) | `direnv allow` |
+| A tool or library is missing in the shell right after editing `nix/*.nix` | The shell hasn't reloaded yet | Press Enter at the prompt (direnv reloads), or `direnv reload` |

@@ -3,10 +3,12 @@
 C++23 project template with CMake presets and a Nix flake.
 
 <!-- template-only:begin -->
-**This repository is a template.** Start a project from it with
-`nix flake new -t github:rollschild/cpp-nix-template <name>`, then run
-`bash rename.sh` in the new directory: it asks for a description and fills in
-every placeholder. [WORKFLOW.md](WORKFLOW.md) §1 has the details.
+**This repository is a template.** Create a project from it with
+`nix run github:rollschild/cpp-nix-template#new -- <name>`: it asks for a
+description, fills in every placeholder and configures the project.
+[WORKFLOW.md](WORKFLOW.md) §1 has the details. The generator lives in
+`nix/new-project/` and `nix flake check` tests it; new projects don't contain
+it.
 
 <!-- template-only:end -->
 A C++23 library, a command-line executable and Catch2 tests, built with CMake
@@ -34,6 +36,7 @@ committing, dependencies and updates.
 ├── flake.lock                # pinned nixpkgs (nixos-unstable) and treefmt-nix
 ├── nix/
 │   ├── package.nix           # the derivation, nixpkgs-style (callPackage)
+│   ├── project.nix           # name, version, description, read from CMakeLists.txt
 │   ├── shell.nix             # dev shell = package deps + clangd, formatters, Python, gdb
 │   └── treefmt.nix           # `nix fmt`: clang-format, gersemi, ruff, nixfmt
 ├── CMakeLists.txt            # project(VERSION), subdirectories, install rules
@@ -60,8 +63,9 @@ collide.
 
 - **One source of truth for each fact.** Dependencies live in
   `nix/package.nix`; the dev shell inherits them through `inputsFrom`. The
-  version lives in `project(VERSION)` in `CMakeLists.txt`, and the Nix package
-  reads it from there.
+  name, version and description live in `project(...)` in `CMakeLists.txt`,
+  and `nix/project.nix` reads them from there, so no Nix file names the project
+  (only `flake.nix`'s own `description`, which Nix requires to be a literal).
 - **The nixpkgs CMake hook does the work.** No hand-written phases: it passes
   the compiler, `-DCMAKE_BUILD_TYPE=Release` and `-GNinja`, runs `ctest` when
   `doCheck` is set (passing `-DBUILD_TESTING=OFF` otherwise), then `install`.

@@ -21,6 +21,9 @@
     let
       inherit (nixpkgs) lib;
 
+      # Name, version and description, parsed from project(...) in CMakeLists.txt.
+      project = import ./nix/project.nix;
+
       # nixpkgs dropped x86_64-darwin in 26.11.
       systems = [
         "x86_64-linux"
@@ -34,25 +37,25 @@
       treefmtFor = forAllSystems (pkgs: treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix);
     in
     {
-      # Consumers add this overlay and get `pkgs.myproject`.
+      # Consumers add this overlay and get `pkgs.<project name>`.
       overlays.default = final: _prev: {
-        myproject = final.callPackage ./nix/package.nix { };
+        ${project.name} = final.callPackage ./nix/package.nix { };
       };
 
       packages = forAllSystems (
         pkgs:
         let
-          myproject = pkgs.callPackage ./nix/package.nix { };
+          package = pkgs.callPackage ./nix/package.nix { };
         in
         {
-          inherit myproject;
-          default = myproject;
+          default = package;
+          ${project.name} = package;
         }
       );
 
       devShells = forAllSystems (pkgs: {
         default = pkgs.callPackage ./nix/shell.nix {
-          inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) myproject;
+          package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
         };
       });
 
@@ -62,12 +65,19 @@
         pkgs:
         let
           inherit (pkgs.stdenv.hostPlatform) system;
-          inherit (self.packages.${system}) myproject;
+          package = self.packages.${system}.default;
         in
         {
-          package = myproject;
-          clang = myproject.override { stdenv = pkgs.clangStdenv; };
+          inherit package;
+          clang = package.override { stdenv = pkgs.clangStdenv; };
           formatting = treefmtFor.${system}.config.build.check self;
+          # template-only:begin (new projects don't contain the generator)
+          # The generator creates a project that formats, builds and passes its tests.
+          new-project = pkgs.callPackage ./nix/new-project/test.nix {
+            new-project = pkgs.callPackage ./nix/new-project { template = self.outPath; };
+            treefmtWrapper = treefmtFor.${system}.config.build.wrapper;
+          };
+          # template-only:end
         }
       );
 
@@ -75,26 +85,17 @@
       formatter = forAllSystems (
         pkgs: treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper
       );
-      # template-only:begin (rename.sh deletes this block in new projects)
+      # template-only:begin (new projects don't contain the generator)
 
-      # `nix flake new -t <this repo> <dir>` scaffolds a new project from this tree.
-      templates.default = {
-        path = ./.;
-        description = "C++23 + CMake presets + Nix flake (direnv, Catch2, treefmt, Python scripts)";
-        welcomeText = ''
-          # New C++ project
-
-          From the new project's directory:
-
-          ```
-          bash rename.sh                  # asks for a description (and a name if the directory's isn't valid)
-          direnv allow                    # or: nix develop
-          cmake --workflow --preset dev   # configure + build + test
-          ```
-
-          WORKFLOW.md has every command, in the order you use them.
-        '';
-      };
+      # `nix run <this flake>#new -- <name> ["description"]` creates ./<name>
+      # from this template, with every placeholder filled in.
+      apps = forAllSystems (pkgs: {
+        new = {
+          type = "app";
+          program = lib.getExe (pkgs.callPackage ./nix/new-project { template = self.outPath; });
+          meta.description = "Create a new project from this template";
+        };
+      });
       # template-only:end
     };
 }
