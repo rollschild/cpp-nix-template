@@ -38,9 +38,14 @@ mkShell {
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [ gdb ];
 
-  # The cc-wrapper's fortify hardening prepends -O2, which silently optimises
-  # Debug builds, and an explicit -O0 then trips glibc's _FORTIFY_SOURCE
-  # #warning (fatal under -Werror). Only the dev shell drops it; the Nix
-  # package keeps all hardening.
-  hardeningDisable = [ "fortify" ];
+  # No cc-wrapper hardening in the dev shell, so dev builds compile with exactly
+  # the flags CMake (and compile_commands.json, i.e. clangd and clang-tidy)
+  # shows. Otherwise the wrapper silently adds, among others:
+  #   - -fno-strict-overflow: signed overflow wraps, so UBSan can't catch it
+  #   - fortify's -O2: Debug builds get optimised
+  #   - -fzero-call-used-regs, stack protector and stack-clash probes: extra
+  #     instructions in every function you disassemble or benchmark
+  # The Nix package (nix build, nix flake check) keeps nixpkgs' full hardening:
+  # it is what you ship.
+  hardeningDisable = [ "all" ];
 }

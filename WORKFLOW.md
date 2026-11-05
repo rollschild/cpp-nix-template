@@ -121,10 +121,10 @@ gdb --args ./build/dev/apps/myproject [args]           # debug it (or nvim-dap: 
 
 ```bash
 cmake --workflow --preset asan  # Debug + AddressSanitizer + UBSan
-cmake --workflow --preset tidy  # clang-tidy on every file; does not fail on warnings, so read its output
+cmake --workflow --preset tidy  # clang-tidy on every file; any warning fails it
 nix fmt                         # format and lint C++, CMake, Python and Nix
 git add -A
-nix flake check                 # what CI runs: GCC + Clang builds and tests, formatting and lint
+nix flake check                 # what CI runs: GCC + Clang builds and tests, clang-tidy, formatting and lint
 git commit -m "..."
 git push                        # CI also runs the asan workflow in the dev shell
 ```
@@ -250,7 +250,7 @@ no network, so `nix build` and CI would fail.
 
 | Task | Commands |
 | --- | --- |
-| Optimised build (RelWithDebInfo) | `cmake --workflow --preset release` |
+| Optimised build (RelWithDebInfo), e.g. to benchmark or read the disassembly | `cmake --workflow --preset release`: exactly CMake's flags (the dev shell adds no hardening; the Nix package does) |
 | Build the Nix package | `nix build`, then `./result/bin/myproject` |
 | Run the package without a checkout | `nix run . -- [args]` |
 | Install to a prefix | `cmake --install build/release --prefix ~/.local` |
@@ -269,5 +269,6 @@ no network, so `nix build` and CI would fail.
 | `error: Path 'nix/foo.nix' ... is not tracked by Git` | Flakes only see files tracked by git | `git add nix/foo.nix` |
 | `hash mismatch ... got: sha256-...` | A new or changed `fetchFromGitHub` | Paste the `got:` hash into `hash` |
 | CMake complains the compiler changed, or still finds a removed package | Cached paths from before `nix flake update` or a dependency change | `cmake --workflow --preset dev --fresh` |
+| clang-tidy fails on a false positive | Every warning is an error (`.clang-tidy`) | `// NOLINT(check-name): reason` on that line, or disable the check in `.clang-tidy` for the whole project |
 | `direnv: error .envrc is blocked` | `.envrc` changed (or a fresh clone) | `direnv allow` |
 | A tool or library is missing in the shell right after editing `nix/*.nix` | The shell hasn't reloaded yet | Press Enter at the prompt (direnv reloads), or `direnv reload` |

@@ -26,6 +26,7 @@ stdenv.mkDerivation (finalAttrs: {
       ../src
       ../apps
       ../tests
+      ../.clang-tidy # read only by the `tidy` check in flake.nix
     ];
   };
 

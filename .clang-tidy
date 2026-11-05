@@ -1,5 +1,8 @@
 ---
-# Run via the `tidy` preset: cmake --workflow --preset tidy
+# Runs in the `tidy` preset (cmake --workflow --preset tidy) and in the `tidy`
+# check of `nix flake check`. Every warning is an error, like compiler warnings
+# under -Werror: silence a false positive with // NOLINT(check-name) and a
+# reason, or disable a check here for the whole project.
 Checks: >
   -*,
   bugprone-*,
@@ -17,6 +20,6 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -misc-non-private-member-variables-in-classes,
   -cppcoreguidelines-non-private-member-variables-in-classes
-WarningsAsErrors: ''
+WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(include|src|apps|tests)/.*'
 FormatStyle: file

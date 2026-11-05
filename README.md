@@ -75,15 +75,20 @@ collide.
   (`myproject_enable_warnings`). `-Werror` comes from CMake's built-in
   `CMAKE_COMPILE_WARNING_AS_ERROR`, which the presets and the Nix package turn
   on. Sanitizers exist only in the `asan` preset.
-- **Two compilers.** `nix flake check` builds and tests with the default
-  stdenv (GCC on Linux) and with `clangStdenv`. CI also runs the dev workflow
-  under ASan and UBSan.
+- **Two compilers, and lint that can fail.** `nix flake check` builds and
+  tests with the default stdenv (GCC on Linux) and with `clangStdenv`, and runs
+  clang-tidy over every file with warnings as errors. CI also runs the dev
+  workflow under ASan and UBSan.
 - **Automatic updates.** nixpkgs follows `nixos-unstable` (which
   cache.nixos.org builds), and Dependabot opens a monthly PR bumping
   `flake.lock` and the GitHub Actions, which CI then verifies.
-- **`fortify` hardening is disabled only in the dev shell.** The nixpkgs
-  compiler wrapper prepends `-O2` for it, which would silently optimise Debug
-  builds. The Nix package keeps every hardening flag.
+- **No compiler-wrapper hardening in the dev shell.** nixpkgs' compiler
+  wrapper silently adds hardening flags that CMake and `compile_commands.json`
+  never show: `-fno-strict-overflow` makes signed overflow wrap, so UBSan can't
+  catch it; fortify's `-O2` optimises Debug builds; register clearing, stack
+  protector and stack-clash probes add instructions to every function. Dev
+  builds therefore compile with exactly CMake's flags. The Nix package keeps
+  nixpkgs' full hardening, because it is what you ship.
 - **gersemi formats CMake.** It is maintained and understands current CMake
   syntax; cmake-format has not had a release since 2020.
 - **C++20 module scanning is off.** The project does not use modules, and

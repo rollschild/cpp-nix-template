@@ -60,7 +60,7 @@
       });
 
       # `nix flake check`: build and test with the default compiler and with
-      # Clang, then verify formatting and lint.
+      # Clang, run clang-tidy over every file, then verify formatting and lint.
       checks = forAllSystems (
         pkgs:
         let
@@ -70,6 +70,15 @@
         {
           inherit package;
           clang = package.override { stdenv = pkgs.clangStdenv; };
+          # clang-tidy on every translation unit, tests included (.clang-tidy:
+          # warnings are errors)
+          tidy = package.overrideAttrs (old: {
+            pname = "${old.pname}-tidy";
+            nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.clang-tools ];
+            cmakeFlags = old.cmakeFlags ++ [
+              "-DCMAKE_CXX_CLANG_TIDY=clang-tidy;--extra-arg=-Wno-unknown-warning-option"
+            ];
+          });
           formatting = treefmtFor.${system}.config.build.check self;
           # template-only:begin (new projects don't contain the generator)
           # The generator creates a project that formats, builds and passes its tests.
