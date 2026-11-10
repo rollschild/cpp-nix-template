@@ -8,5 +8,5 @@ target_link_libraries(
 )
 myproject_enable_warnings(myproject_tests)
 
-# Register every TEST_CASE with CTest individually.
+# Add each TEST_CASE to CTest as a separate test.
 catch_discover_tests(myproject_tests)

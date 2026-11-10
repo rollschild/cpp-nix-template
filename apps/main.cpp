@@ -13,8 +13,9 @@ int main(int argc, char* argv[]) try {
     std::println("{}", myproject::greet(name));
     return EXIT_SUCCESS;
 } catch (const std::exception& e) {
-    // Fail with a message and an exit code instead of std::terminate. The
-    // handler must not throw itself, hence fputs rather than std::println.
+    // Write the error to stderr and return EXIT_FAILURE. Without this handler,
+    // an exception causes a call to std::terminate. The handler must not throw
+    // an exception, so it uses fputs, not std::println.
     std::fputs(e.what(), stderr);
     std::fputc('\n', stderr);
     return EXIT_FAILURE;

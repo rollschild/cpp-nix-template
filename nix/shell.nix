@@ -1,5 +1,5 @@
-# Developer shell. Inherits every build and test dependency from the package so
-# the two never drift apart, then adds tools you only want at the keyboard.
+# The dev shell. It gets all build and test dependencies from the package, so
+# the two always agree. It also adds tools for interactive use.
 {
   lib,
   stdenv,
@@ -21,11 +21,11 @@ mkShell {
 
   packages = [
     clang-tools # clangd, clang-tidy, clang-format
-    # The formatters `nix fmt` runs (nix/treefmt.nix), on PATH so that editor
-    # format-on-save produces exactly what CI checks. gersemi is a Python
-    # application: exposing only its bin/ keeps its propagated interpreter and
-    # libraries out of the shell, where they would shadow python3 below and
-    # leak into PYTHONPATH.
+    # The `nix fmt` formatters (nix/treefmt.nix) are on PATH, so that
+    # format-on-save in the editor gives the same result as CI. gersemi is a
+    # Python application, and only its bin/ goes into the shell. If all of
+    # gersemi goes in, its Python interpreter and libraries go in too. Then
+    # `python3` can be the wrong interpreter, and PYTHONPATH changes.
     (buildEnv {
       name = "gersemi";
       paths = [ gersemi ];
@@ -33,19 +33,20 @@ mkShell {
     })
     nixfmt
     ruff
-    # Python for scripts/. Add libraries from nixpkgs, e.g. `ps: [ ps.numpy ]`.
+    # Python for scripts/. Add libraries from nixpkgs, for example
+    # `ps: [ ps.numpy ]`.
     (python3.withPackages (ps: [ ]))
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [ gdb ];
 
-  # No cc-wrapper hardening in the dev shell, so dev builds compile with exactly
-  # the flags CMake (and compile_commands.json, i.e. clangd and clang-tidy)
-  # shows. Otherwise the wrapper silently adds, among others:
-  #   - -fno-strict-overflow: signed overflow wraps, so UBSan can't catch it
-  #   - fortify's -O2: Debug builds get optimised
-  #   - -fzero-call-used-regs, stack protector and stack-clash probes: extra
-  #     instructions in every function you disassemble or benchmark
-  # The Nix package (nix build, nix flake check) keeps nixpkgs' full hardening:
-  # it is what you ship.
+  # No compiler-wrapper hardening in the dev shell. Then dev builds use only the
+  # flags that CMake and compile_commands.json (clangd, clang-tidy) show.
+  # Without this line, the wrapper adds flags that are not visible, for example:
+  #   - -fno-strict-overflow: signed overflow wraps, so UBSan cannot find it
+  #   - fortify adds -O2: Debug builds are optimized
+  #   - -fzero-call-used-regs, stack protector and stack-clash probes: more
+  #     instructions in all functions that you disassemble or benchmark
+  # The Nix package (nix build, nix flake check) keeps the full nixpkgs
+  # hardening, because you ship it.
   hardeningDisable = [ "all" ];
 }

@@ -1,6 +1,7 @@
-# Strict warnings for this project's own targets. PRIVATE, so they never reach
-# consumers of the library. -Werror is not set here: the presets and the Nix
-# package turn on CMake's built-in CMAKE_COMPILE_WARNING_AS_ERROR instead.
+# Strict warnings for the targets of this project. They are PRIVATE, so the
+# users of the library do not get them. This file does not set -Werror. The
+# presets and the Nix package set the CMake variable
+# CMAKE_COMPILE_WARNING_AS_ERROR.
 function(myproject_enable_warnings target)
     set(warnings
         -Wall

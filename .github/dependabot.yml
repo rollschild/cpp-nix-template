@@ -1,5 +1,5 @@
-# Monthly pull requests that bump the flake inputs (flake.lock) and the GitHub
-# Actions used by CI. CI then builds and tests each bump.
+# Each month, Dependabot opens pull requests that update the flake inputs
+# (flake.lock) and the GitHub Actions of CI. CI builds and tests each update.
 version: 2
 updates:
   - package-ecosystem: nix

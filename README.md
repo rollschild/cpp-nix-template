@@ -3,94 +3,96 @@
 C++23 project template with CMake presets and a Nix flake.
 
 <!-- template-only:begin -->
-**This repository is a template.** Create a project from it with
-`nix run github:rollschild/cpp-nix-template#new -- <name>`: it asks for a
-description, fills in every placeholder and configures the project.
-[WORKFLOW.md](WORKFLOW.md) §1 has the details. The generator lives in
-`nix/new-project/` and `nix flake check` tests it; new projects don't contain
-it.
+**This repository is a template.** To make a project from it, run
+`nix run github:rollschild/cpp-nix-template#new -- <name>`. The generator asks
+for a description, writes the name and the description into all files, and
+configures the project. For more information, see [WORKFLOW.md](WORKFLOW.md)
+§1. The generator is in `nix/new-project/`, and `nix flake check` tests it.
+New projects do not contain it.
 
 <!-- template-only:end -->
-A C++23 library, a command-line executable and Catch2 tests, built with CMake
-presets and developed and packaged with a Nix flake, with room for Python
-helper scripts. `nix flake check` runs the same build, tests, formatting and
-lint checks that CI runs.
+This project contains a C++23 library, a command-line executable and Catch2
+tests. CMake presets build it. A Nix flake supplies the dev shell and the
+package. Python helper scripts go in `scripts/`. `nix flake check` does the
+same build, test, format and lint checks as CI.
 
-## Quick start
+## First steps
 
 ```bash
-direnv allow                    # or: nix develop
-cmake --workflow --preset dev   # configure + build + test
+direnv allow                    # load the dev shell
+cmake --workflow --preset dev   # configure, build and test
 ```
 
-**[WORKFLOW.md](WORKFLOW.md) is the full command reference**, in the order you
-use the commands: machine setup, starting a new project from the template,
-opening an existing project, the daily build/test/debug loop, checks before
-committing, dependencies and updates.
+**[WORKFLOW.md](WORKFLOW.md) has all commands**, in the sequence that you use
+them.
 
 ## Layout
 
 ```
 .
-├── flake.nix                 # inputs + outputs; the logic lives in nix/
+├── flake.nix                 # inputs and outputs (the logic is in nix/)
 ├── flake.lock                # pinned nixpkgs (nixos-unstable) and treefmt-nix
 ├── nix/
-│   ├── package.nix           # the derivation, nixpkgs-style (callPackage)
-│   ├── project.nix           # name, version, description, read from CMakeLists.txt
-│   ├── shell.nix             # dev shell = package deps + clangd, formatters, Python, gdb
+│   ├── package.nix           # the derivation, in nixpkgs style (callPackage)
+│   ├── project.nix           # name, version and description from CMakeLists.txt
+│   ├── shell.nix             # dev shell: package dependencies, clangd, formatters, Python, gdb
 │   └── treefmt.nix           # `nix fmt`: clang-format, gersemi, ruff, nixfmt
 ├── CMakeLists.txt            # project(VERSION), subdirectories, install rules
-├── CMakePresets.json         # dev / asan / tidy / release presets + workflows
-├── cmake/                    # warning flags, install/export rules, package config
+├── CMakePresets.json         # presets dev, asan, tidy, release, and their workflows
+├── cmake/                    # warning flags, install and export rules, package configuration
 ├── include/myproject/        # public headers (installed, FILE_SET HEADERS)
 ├── src/                      # library sources and private headers
 ├── apps/                     # executables
-├── tests/                    # Catch2 tests, each TEST_CASE registered with CTest
-├── ruff.toml                 # Python lint + format rules (scripts/ is created as needed)
-├── WORKFLOW.md               # every command, in the order you use them
+├── tests/                    # Catch2 tests (CTest has each TEST_CASE)
+├── ruff.toml                 # Python lint and format rules
+├── WORKFLOW.md               # all commands, in sequence
 ├── .envrc                    # direnv: `use flake`
 ├── .clangd                   # clangd reads build/dev/compile_commands.json
 ├── .clang-format  .clang-tidy  .editorconfig
-└── .github/                  # CI (`nix flake check` + ASan run), Dependabot
+└── .github/                  # CI (`nix flake check` and an ASan run), Dependabot
 ```
 
-The layout follows the Pitchfork Layout with separate header placement
-(`include/` public, `src/` private) and `apps/` for executables. Every preset
-configures into `build/<preset>`, so Debug, sanitizer and release trees never
-collide.
+The layout is the Pitchfork Layout with separate headers: public headers in
+`include/`, private headers in `src/`. Executables are in `apps/`. Each preset
+has its own build tree, `build/<preset>`.
 
 ## Design notes
 
-- **One source of truth for each fact.** Dependencies live in
-  `nix/package.nix`; the dev shell inherits them through `inputsFrom`. The
-  name, version and description live in `project(...)` in `CMakeLists.txt`,
-  and `nix/project.nix` reads them from there, so no Nix file names the project
-  (only `flake.nix`'s own `description`, which Nix requires to be a literal).
-- **The nixpkgs CMake hook does the work.** No hand-written phases: it passes
-  the compiler, `-DCMAKE_BUILD_TYPE=Release` and `-GNinja`, runs `ctest` when
-  `doCheck` is set (passing `-DBUILD_TESTING=OFF` otherwise), then `install`.
-- **`lib.fileset` source filtering.** Editing docs, scripts or Nix files does
-  not rebuild the package.
-- **Dev flags never leak.** Warnings are attached `PRIVATE` to each target
-  (`myproject_enable_warnings`). `-Werror` comes from CMake's built-in
-  `CMAKE_COMPILE_WARNING_AS_ERROR`, which the presets and the Nix package turn
-  on. Sanitizers exist only in the `asan` preset.
-- **Two compilers, and lint that can fail.** `nix flake check` builds and
-  tests with the default stdenv (GCC on Linux) and with `clangStdenv`, and runs
-  clang-tidy over every file with warnings as errors. CI also runs the dev
-  workflow under ASan and UBSan.
-- **Automatic updates.** nixpkgs follows `nixos-unstable` (which
-  cache.nixos.org builds), and Dependabot opens a monthly PR bumping
-  `flake.lock` and the GitHub Actions, which CI then verifies.
-- **No compiler-wrapper hardening in the dev shell.** nixpkgs' compiler
-  wrapper silently adds hardening flags that CMake and `compile_commands.json`
-  never show: `-fno-strict-overflow` makes signed overflow wrap, so UBSan can't
-  catch it; fortify's `-O2` optimises Debug builds; register clearing, stack
-  protector and stack-clash probes add instructions to every function. Dev
-  builds therefore compile with exactly CMake's flags. The Nix package keeps
-  nixpkgs' full hardening, because it is what you ship.
-- **gersemi formats CMake.** It is maintained and understands current CMake
-  syntax; cmake-format has not had a release since 2020.
-- **C++20 module scanning is off.** The project does not use modules, and
-  scanning injects GCC-only flags that clangd and clang-tidy reject.
-- **No `shellHook`.** Your own shell and prompt stay exactly as configured.
+- **One source for each fact.** The dependencies are in `nix/package.nix`, and
+  the dev shell gets them through `inputsFrom`. The name, version and
+  description are in `project(...)` in `CMakeLists.txt`, and
+  `nix/project.nix` reads them from there. Only `flake.nix` has a copy of the
+  description, because Nix must have a literal string there.
+- **The nixpkgs CMake hook does the build.** There are no custom phases. The
+  hook sets the compiler, `-DCMAKE_BUILD_TYPE=Release` and `-GNinja`. It runs
+  `ctest` if `doCheck` is set. If not, it sets `-DBUILD_TESTING=OFF`. Then it
+  runs `install`.
+- **`lib.fileset` filters the source.** A change to the docs, scripts or Nix
+  files does not rebuild the package.
+- **The development flags stay in this project.** Each target gets its
+  warnings as `PRIVATE` flags (`myproject_enable_warnings`). `-Werror` comes
+  from the CMake variable `CMAKE_COMPILE_WARNING_AS_ERROR`, which the presets
+  and the Nix package set. Only the `asan` preset has sanitizers.
+- **Two compilers and clang-tidy.** `nix flake check` builds and tests with
+  the default stdenv (GCC on Linux) and with `clangStdenv`. It also runs
+  clang-tidy on all files, and each warning is an error. CI also runs the
+  `asan` workflow (ASan and UBSan).
+- **Automatic updates.** nixpkgs follows `nixos-unstable`, because
+  cache.nixos.org builds that branch. Each month, Dependabot opens a PR that
+  updates `flake.lock` and the GitHub Actions. CI tests the PR.
+- **No compiler-wrapper hardening in the dev shell.** The nixpkgs compiler
+  wrapper adds hardening flags that CMake and `compile_commands.json` do not
+  show:
+  - `-fno-strict-overflow` makes signed overflow wrap, so UBSan cannot find
+    it.
+  - Fortify adds `-O2`, which optimizes Debug builds.
+  - `-fzero-call-used-regs`, the stack protector and stack-clash probes add
+    instructions to all functions.
+
+  The dev shell removes these flags, so dev builds use only the CMake flags.
+  The Nix package keeps the full nixpkgs hardening, because you ship it.
+- **gersemi formats CMake.** gersemi has regular releases and knows the
+  current CMake syntax. cmake-format has had no release since 2020.
+- **No C++20 module scan.** The project does not use modules. The scan adds
+  GCC flags that clangd and clang-tidy show as errors.
+- **No `shellHook`.** The dev shell does not change your shell or your prompt.

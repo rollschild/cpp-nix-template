@@ -1,5 +1,5 @@
-# `cmake --install` layout plus an exported CMake package, so other projects can
-# `find_package(myproject)` and link `myproject::myproject`.
+# The `cmake --install` layout and an exported CMake package. Other projects
+# can use `find_package(myproject)` and link to `myproject::myproject`.
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 

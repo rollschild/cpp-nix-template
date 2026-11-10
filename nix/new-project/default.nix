@@ -1,6 +1,7 @@
-# The generator behind `nix run <this flake>#new -- <name>`. Packaging it here
-# pins its tools to flake.lock (not whatever the host has) and runs shellcheck
-# when it is built. `template` is the template's source (the flake's `self`).
+# The generator for `nix run <this flake>#new -- <name>`. As a package, it uses
+# the tool versions in flake.lock, not the tools of the host, and shellcheck
+# examines it at build time. `template` is the source of the template (the
+# `self` of the flake).
 {
   writeShellApplication,
   coreutils,
@@ -20,7 +21,8 @@ writeShellApplication {
     gnused
     perl
   ];
-  # `nix fmt` and `nix develop` use the host's Nix, still on PATH after these.
+  # `nix fmt` and `nix develop` use the Nix of the host. It stays on PATH after
+  # these tools.
   runtimeEnv.TEMPLATE = template;
   text = builtins.readFile ./new-project.sh;
 }

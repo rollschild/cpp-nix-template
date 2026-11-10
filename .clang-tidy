@@ -1,8 +1,8 @@
 ---
-# Runs in the `tidy` preset (cmake --workflow --preset tidy) and in the `tidy`
-# check of `nix flake check`. Every warning is an error, like compiler warnings
-# under -Werror: silence a false positive with // NOLINT(check-name) and a
-# reason, or disable a check here for the whole project.
+# The `tidy` preset (cmake --workflow --preset tidy) and the `tidy` check of
+# `nix flake check` use this file. Each warning is an error, as with -Werror.
+# For a false positive, add // NOLINT(check-name) and a reason on that line.
+# To remove a check for all files, add -check-name to Checks.
 Checks: >
   -*,
   bugprone-*,

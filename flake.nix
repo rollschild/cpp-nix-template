@@ -2,10 +2,10 @@
   description = "C++23 project template with CMake presets and a Nix flake";
 
   inputs = {
-    # Pin a channel that cache.nixos.org actually builds; `master` is not cached.
+    # cache.nixos.org has binaries for this branch, but not for `master`.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # One `nix fmt` entry point for C++, CMake, Python and Nix sources.
+    # One `nix fmt` command for C++, CMake, Python and Nix files.
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -21,23 +21,23 @@
     let
       inherit (nixpkgs) lib;
 
-      # Name, version and description, parsed from project(...) in CMakeLists.txt.
+      # The name, version and description, from project(...) in CMakeLists.txt.
       project = import ./nix/project.nix;
 
-      # nixpkgs dropped x86_64-darwin in 26.11.
+      # nixpkgs 26.11 does not support x86_64-darwin.
       systems = [
         "x86_64-linux"
         "aarch64-linux"
         "aarch64-darwin"
       ];
 
-      # { <system> = f pkgs; } for every supported system, no flake-utils needed.
+      # { <system> = f pkgs; } for each system. flake-utils is not necessary.
       forAllSystems = f: lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
 
       treefmtFor = forAllSystems (pkgs: treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix);
     in
     {
-      # Consumers add this overlay and get `pkgs.<project name>`.
+      # With this overlay, other flakes get `pkgs.<project name>`.
       overlays.default = final: _prev: {
         ${project.name} = final.callPackage ./nix/package.nix { };
       };
@@ -60,7 +60,7 @@
       });
 
       # `nix flake check`: build and test with the default compiler and with
-      # Clang, run clang-tidy over every file, then verify formatting and lint.
+      # Clang, run clang-tidy on all files, and do the format and lint checks.
       checks = forAllSystems (
         pkgs:
         let
@@ -70,8 +70,8 @@
         {
           inherit package;
           clang = package.override { stdenv = pkgs.clangStdenv; };
-          # clang-tidy on every translation unit, tests included (.clang-tidy:
-          # warnings are errors)
+          # clang-tidy on all translation units, also the tests. Each warning is
+          # an error (.clang-tidy).
           tidy = package.overrideAttrs (old: {
             pname = "${old.pname}-tidy";
             nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.clang-tools ];
@@ -80,8 +80,9 @@
             ];
           });
           formatting = treefmtFor.${system}.config.build.check self;
-          # template-only:begin (new projects don't contain the generator)
-          # The generator creates a project that formats, builds and passes its tests.
+          # template-only:begin (new projects do not contain the generator)
+          # Test the generator. Its project must have the correct format, and
+          # its build and tests must have no errors.
           new-project = pkgs.callPackage ./nix/new-project/test.nix {
             new-project = pkgs.callPackage ./nix/new-project { template = self.outPath; };
             treefmtWrapper = treefmtFor.${system}.config.build.wrapper;
@@ -90,14 +91,14 @@
         }
       );
 
-      # `nix fmt` formats the whole tree.
+      # `nix fmt` formats all files.
       formatter = forAllSystems (
         pkgs: treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper
       );
-      # template-only:begin (new projects don't contain the generator)
+      # template-only:begin (new projects do not contain the generator)
 
-      # `nix run <this flake>#new -- <name> ["description"]` creates ./<name>
-      # from this template, with every placeholder filled in.
+      # `nix run <this flake>#new -- <name> ["description"]` makes ./<name>
+      # from this template and replaces all placeholders.
       apps = forAllSystems (pkgs: {
         new = {
           type = "app";

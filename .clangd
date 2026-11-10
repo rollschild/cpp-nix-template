@@ -1,4 +1,5 @@
-# Point clangd at the `dev` preset's compile database; no symlink needed.
+# clangd reads the compile database of the `dev` preset. No symlink is
+# necessary.
 CompileFlags:
   CompilationDatabase: build/dev
 Diagnostics:

@@ -1,6 +1,7 @@
-# Project metadata, parsed from `project(<name> VERSION ... DESCRIPTION "...")`
-# in CMakeLists.txt, the single source of truth (like Rust flakes reading
-# Cargo.toml). The Nix files never spell out the project's name or version.
+# The project name, version and description, from
+# `project(<name> VERSION ... DESCRIPTION "...")` in CMakeLists.txt. That is
+# the only source of these values, as Cargo.toml is for Rust flakes. No Nix
+# file contains the name or the version.
 let
   cmakeLists = builtins.readFile ../CMakeLists.txt;
   field = re: builtins.head (builtins.match ".*project\\([[:space:]]*${re}.*" cmakeLists);

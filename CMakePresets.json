@@ -22,7 +22,7 @@
     },
     {
       "name": "asan",
-      "displayName": "Debug + AddressSanitizer + UndefinedBehaviorSanitizer",
+      "displayName": "Debug, AddressSanitizer and UndefinedBehaviorSanitizer",
       "inherits": "dev",
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
@@ -30,7 +30,7 @@
     },
     {
       "name": "tidy",
-      "displayName": "Debug + clang-tidy on every translation unit",
+      "displayName": "Debug, clang-tidy on all translation units",
       "inherits": "dev",
       "cacheVariables": {
         "CMAKE_CXX_CLANG_TIDY": "clang-tidy;--extra-arg=-Wno-unknown-warning-option"
@@ -38,7 +38,7 @@
     },
     {
       "name": "release",
-      "displayName": "Optimised with debug info",
+      "displayName": "Optimized, with debug information",
       "inherits": "base",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
     }

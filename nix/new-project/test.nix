@@ -1,8 +1,11 @@
-# `nix flake check` test of the generator: create a project with it, then check
-# that every placeholder is filled in, the template-only parts are gone, and the
-# result formats cleanly, builds and passes its tests. Nix itself is not
-# available in the sandbox, so the generator skips `nix fmt` and the dev-preset
-# configure (NEW_PROJECT_NO_NIX) and treefmt runs directly instead.
+# The `nix flake check` test of the generator. The test makes a project, then
+# makes sure that:
+#   - no placeholders and no template-only parts remain
+#   - the format is correct
+#   - the project builds, and its tests have no errors
+# Nix is not available in the sandbox. NEW_PROJECT_NO_NIX tells the generator
+# not to run `nix fmt` and the dev-preset configure. The test runs treefmt
+# directly.
 {
   runCommandCC,
   catch2_3,
@@ -33,10 +36,10 @@ runCommandCC "new-project-test"
     NEW_PROJECT_NO_NIX=1 new-project order_book 'Order book (L2) & `matching` engine.' </dev/null
     cd order_book
 
-    # Every placeholder is filled in, and nothing template-only came along.
+    # No placeholders and no template-only parts remain.
     if grep -rIn -F --exclude-dir=.git -e myproject -e MYPROJECT \
       -e 'C++23 project template with CMake presets and a Nix flake' -e 'template-only:' .; then
-      echo "placeholders left (above)"; exit 1
+      echo "placeholders remain (see above)"; exit 1
     fi
     test ! -e nix/new-project
     test "$(git symbolic-ref --short HEAD)" = main
@@ -47,10 +50,11 @@ runCommandCC "new-project-test"
     test -f include/order_book/order_book.hpp
     test -f tests/order_book_test.cpp
 
-    # It formats cleanly; nixfmt also proves the edited flake.nix still parses.
+    # The format is correct. nixfmt also makes sure that Nix can parse the
+    # changed flake.nix.
     treefmt --no-cache
 
-    # It builds and passes its tests, as the Nix package would.
+    # Build and test as the Nix package does.
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
     cmake --build build
     ctest --test-dir build --output-on-failure

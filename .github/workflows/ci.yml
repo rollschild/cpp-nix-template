@@ -15,8 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
-      # Package build + tests with GCC and with Clang, clang-tidy, formatting and lint.
+      # Package builds and tests (GCC, Clang), clang-tidy, format and lint.
       - run: nix flake check -L
-      # The daily workflow (dev shell + presets) as a Debug build under
-      # AddressSanitizer + UBSan, warnings as errors.
+      # The daily workflow (dev shell and presets): a Debug build with
+      # AddressSanitizer and UBSan, and warnings as errors.
       - run: nix develop --command cmake --workflow --preset asan

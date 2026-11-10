@@ -1,5 +1,5 @@
-# The package, written nixpkgs-style so it can be `callPackage`d from the flake,
-# from an overlay, or copied into nixpkgs later.
+# The package, in nixpkgs style. The flake and the overlay load it with
+# `callPackage`, and you can copy it into nixpkgs.
 {
   lib,
   stdenv,
@@ -9,14 +9,15 @@
 }:
 
 let
-  # Name, version and description come from project(...) in CMakeLists.txt.
+  # The name, version and description are from project(...) in CMakeLists.txt.
   project = import ./project.nix;
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = project.name;
   inherit (project) version;
 
-  # Only what CMake needs: editing docs, scripts or Nix files never rebuilds.
+  # Only the files that CMake uses. A change to the docs, scripts or Nix files
+  # does not cause a rebuild.
   src = lib.fileset.toSource {
     root = ../.;
     fileset = lib.fileset.unions [
@@ -26,7 +27,7 @@ stdenv.mkDerivation (finalAttrs: {
       ../src
       ../apps
       ../tests
-      ../.clang-tidy # read only by the `tidy` check in flake.nix
+      ../.clang-tidy # only the `tidy` check in flake.nix reads it
     ];
   };
 
@@ -35,21 +36,22 @@ stdenv.mkDerivation (finalAttrs: {
     ninja
   ];
 
-  # Libraries the project links against; each becomes a `find_package` target.
+  # Libraries that the project links to. CMake finds each with `find_package`.
   buildInputs = [ ];
 
-  # Test-only dependencies, added to the build only when doCheck is true.
+  # Dependencies of the tests only. The build gets them only if doCheck is true.
   checkInputs = [ catch2_3 ];
 
   cmakeFlags = [
     (lib.cmakeBool "CMAKE_COMPILE_WARNING_AS_ERROR" true)
   ];
 
-  # Run the tests (ctest) after building. When false, the cmake hook passes
-  # -DBUILD_TESTING=OFF, so Catch2 is not needed at all.
+  # Run the tests (ctest) after the build. If false, the cmake hook sets
+  # -DBUILD_TESTING=OFF, and Catch2 is not necessary.
   doCheck = true;
 
-  # Keep build-time and run-time dependencies separate (catches misplaced inputs).
+  # Keep build-time and run-time dependencies separate. Then an input in the
+  # wrong list causes an error.
   strictDeps = true;
 
   meta = {
@@ -57,6 +59,6 @@ stdenv.mkDerivation (finalAttrs: {
     homepage = "https://github.com/rollschild/${finalAttrs.pname}";
     license = lib.licenses.mit;
     platforms = lib.platforms.unix;
-    mainProgram = finalAttrs.pname; # apps/ builds the executable under the project name
+    mainProgram = finalAttrs.pname; # apps/ gives the executable the project name
   };
 })

@@ -16,7 +16,7 @@ set_target_properties(
     myproject_lib
     PROPERTIES
         OUTPUT_NAME myproject # libmyproject.a, not libmyproject_lib.a
-        EXPORT_NAME myproject # consumers link myproject::myproject
+        EXPORT_NAME myproject # other projects link to myproject::myproject
         VERSION ${PROJECT_VERSION}
         SOVERSION ${PROJECT_VERSION_MAJOR}
 )

@@ -1,4 +1,4 @@
-# CMake (every preset configures into build/<preset>)
+# CMake (each preset has its build tree in build/<preset>)
 build/
 CMakeUserPresets.json
 compile_commands.json
@@ -13,5 +13,5 @@ __pycache__/
 .venv/
 .ruff_cache/
 
-# Editor / tool caches
+# Editor and tool caches
 .cache/

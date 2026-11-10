@@ -1,5 +1,6 @@
 # https://clang.llvm.org/docs/ClangFormatStyleOptions.html
-# To disable for a line use `// clang-format off`
+# To keep the format of some lines, put them between `// clang-format off` and
+# `// clang-format on`.
 BasedOnStyle: Google # https://google.github.io/styleguide/cppguide.html
 # BasedOnStyle: LLVM
 # BasedOnStyle: GNU

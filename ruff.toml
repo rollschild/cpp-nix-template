@@ -1,8 +1,8 @@
-# Ruff, the Python linter and formatter. `nix fmt` / `nix flake check` run it on
-# every *.py file, and editors running `ruff server` read this file too.
+# Ruff, the Python linter and formatter. `nix fmt` and `nix flake check` use it
+# for all *.py files. Editors with `ruff server` also read this file.
 target-version = "py314"
 
 [lint]
-# On top of the defaults (pyflakes + core pycodestyle): bugbear, isort,
-# pyupgrade and ruff's own rules.
+# The defaults (pyflakes and core pycodestyle), and also bugbear, isort,
+# pyupgrade and the Ruff rules.
 extend-select = ["B", "I", "UP", "RUF"]

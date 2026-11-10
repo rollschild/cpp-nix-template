@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28...4.4)
 
-# The name, VERSION and DESCRIPTION are the single source of truth:
-# nix/project.nix reads them from here for the Nix package and flake.
+# This is the only source of the name, VERSION and DESCRIPTION.
+# nix/project.nix reads them for the Nix package and the flake.
 project(
     myproject
     VERSION 0.1.0
@@ -11,14 +11,17 @@ project(
 )
 
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
-    message(FATAL_ERROR "In-source build. Use a preset: cmake --preset dev")
+    message(
+        FATAL_ERROR
+        "Do not build in the source directory. Use a preset: cmake --preset dev"
+    )
 endif()
 
 # -std=c++23, not -std=gnu++23.
 set(CMAKE_CXX_EXTENSIONS OFF)
-# No C++20 modules here. Scanning is on by default for C++20+ with Ninja and GCC
-# 14+, and it injects GCC-only flags into compile_commands.json that clangd and
-# clang-tidy reject.
+# This project does not use C++20 modules. With Ninja and GCC 14 or later, CMake
+# does a module scan by default. The scan adds GCC flags to
+# compile_commands.json that clangd and clang-tidy show as errors.
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 include(cmake/CompilerWarnings.cmake) # myproject_enable_warnings()
@@ -28,7 +31,7 @@ add_subdirectory(src)
 if(PROJECT_IS_TOP_LEVEL)
     add_subdirectory(apps)
 
-    include(CTest) # defines BUILD_TESTING (default ON), calls enable_testing()
+    include(CTest) # sets BUILD_TESTING (default ON) and calls enable_testing()
     if(BUILD_TESTING)
         add_subdirectory(tests)
     endif()
