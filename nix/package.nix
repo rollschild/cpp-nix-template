@@ -5,7 +5,7 @@
   stdenv,
   cmake,
   ninja,
-  catch2_3,
+  gtest,
 }:
 
 let
@@ -40,14 +40,14 @@ stdenv.mkDerivation (finalAttrs: {
   buildInputs = [ ];
 
   # Dependencies of the tests only. The build gets them only if doCheck is true.
-  checkInputs = [ catch2_3 ];
+  checkInputs = [ gtest ];
 
   cmakeFlags = [
     (lib.cmakeBool "CMAKE_COMPILE_WARNING_AS_ERROR" true)
   ];
 
   # Run the tests (ctest) after the build. If false, the cmake hook sets
-  # -DBUILD_TESTING=OFF, and Catch2 is not necessary.
+  # -DBUILD_TESTING=OFF, and GoogleTest is not necessary.
   doCheck = true;
 
   # Keep build-time and run-time dependencies separate. Then an input in the

@@ -106,9 +106,9 @@ nvim .                          # from the project directory, after the first co
 cmake --build --preset dev      # build
 ctest --preset dev              # test (to build and test: cmake --workflow --preset dev)
 ctest --preset dev -R <regex>   # only the tests with a name that agrees with <regex>
-./build/dev/tests/myproject_tests "<test case name>"   # one Catch2 test case, with the Catch2 output
-./build/dev/apps/myproject [args]                      # the executable (Debug build)
-gdb --args ./build/dev/apps/myproject [args]           # debug the executable (or nvim-dap: <leader>db, <leader>dc)
+./build/dev/tests/myproject_tests --gtest_filter=<Suite>.<Test>   # one test, with the GoogleTest output
+./build/dev/apps/myproject [args]                                 # the executable (Debug build)
+gdb --args ./build/dev/apps/myproject [args]                      # debug the executable (or nvim-dap: <leader>db, <leader>dc)
 ```
 
 - Add each new `.cpp` or `.hpp` file to its target in `CMakeLists.txt`. The
@@ -139,7 +139,7 @@ Where to put each type of dependency:
 | Dependency | Put it in | Examples |
 | --- | --- | --- |
 | A library that your code links to | `buildInputs` in `nix/package.nix` | `abseil-cpp`, `boost`, `liburing` |
-| A library that only the tests use | `checkInputs` in `nix/package.nix` | `catch2_3` (in the template) |
+| A library that only the tests use | `checkInputs` in `nix/package.nix` | `gtest` (in the template) |
 | A tool that the build runs | `nativeBuildInputs` in `nix/package.nix` | `protobuf` (for `protoc`) |
 | A tool that you use, but the build does not | `packages` in `nix/shell.nix` | `hyperfine`, `valgrind`, `lldb` |
 | A Python library for `scripts/` | `python3.withPackages` in `nix/shell.nix` | `ps.numpy`, `ps.matplotlib` |

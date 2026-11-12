@@ -11,7 +11,7 @@ configures the project. For more information, see [WORKFLOW.md](WORKFLOW.md)
 New projects do not contain it.
 
 <!-- template-only:end -->
-This project contains a C++23 library, a command-line executable and Catch2
+This project contains a C++23 library, a command-line executable and GoogleTest
 tests. CMake presets build it. A Nix flake supplies the dev shell and the
 package. Python helper scripts go in `scripts/`. `nix flake check` does the
 same build, test, format and lint checks as CI.
@@ -43,7 +43,7 @@ them.
 ├── include/myproject/        # public headers (installed, FILE_SET HEADERS)
 ├── src/                      # library sources and private headers
 ├── apps/                     # executables
-├── tests/                    # Catch2 tests (CTest has each TEST_CASE)
+├── tests/                    # GoogleTest tests (CTest has each TEST)
 ├── ruff.toml                 # Python lint and format rules
 ├── WORKFLOW.md               # all commands, in sequence
 ├── .envrc                    # direnv: `use flake`

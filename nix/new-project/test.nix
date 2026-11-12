@@ -8,7 +8,7 @@
 # directly.
 {
   runCommandCC,
-  catch2_3,
+  gtest,
   cmake,
   git,
   ninja,
@@ -25,7 +25,7 @@ runCommandCC "new-project-test"
       new-project
       treefmtWrapper
     ];
-    buildInputs = [ catch2_3 ];
+    buildInputs = [ gtest ];
   }
   ''
     export HOME=$TMPDIR
